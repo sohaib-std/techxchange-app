@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Base URL for API requests. Thanks to the proxy, we can use relative paths.
 const API_BASE_URL = '/api';
 
 // Create a configured axios instance
@@ -11,21 +10,34 @@ const api = axios.create({
   },
 });
 
+// Function to set the authentication token
+export const setAuthToken = (token) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
+
 // API service functions
 export const productService = {
-  // Get all products
   getAll: () => api.get('/products'),
-  // Get a single product by ID
   getById: (id) => api.get(`/products/${id}`),
 };
 
 export const sellerService = {
-  // Get all sellers
   getAll: () => api.get('/sellers'),
-  // Get a single seller by ID
   getById: (id) => api.get(`/sellers/${id}`),
 };
 
 export const reviewService = {
-    create: (reviewData) => api.post('/reviews', reviewData),
-  };
+  create: (reviewData) => api.post('/reviews', reviewData),
+};
+
+// NEW: Authentication services
+export const authService = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  getProfile: () => api.get('/auth/profile'),
+  setToken: (token) => setAuthToken(token), // Export the token setter
+};
