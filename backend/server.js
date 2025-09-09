@@ -3,6 +3,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database'); // Import DB connection
 
+const authRoutes = require('./routes/auth');
+const { protect } = require('./middleware/auth');
 // Load environment variables
 dotenv.config();
 
@@ -130,6 +132,15 @@ app.post('/api/products', async (req, res) => {
     }
   });
 
+app.use('/api/auth', authRoutes);
+app.get('/api/auth/profile', protect, async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id).select('-password');
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Server error fetching profile", error: error.message });
+    }
+  });
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
