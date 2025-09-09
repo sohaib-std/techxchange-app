@@ -26,4 +26,6 @@ export const sellerService = {
   getById: (id) => api.get(`/sellers/${id}`),
 };
 
-// Add more services for reviews, auth, etc. here later
+export const reviewService = {
+    create: (reviewData) => api.post('/reviews', reviewData),
+  };

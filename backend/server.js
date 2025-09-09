@@ -78,6 +78,58 @@ app.get('/api/sellers/:id', async (req, res) => {
   }
 });
 
+// POST /api/reviews - Submit a new review
+app.post('/api/reviews', async (req, res) => {
+    try {
+      const { productId, rating, reviewerName, reviewText } = req.body;
+  
+      // Basic validation
+      if (!productId || !rating || !reviewerName || !reviewText) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+  
+      const newReview = new Review({
+        productId,
+        rating,
+        reviewerName,
+        reviewText
+      });
+  
+      const savedReview = await newReview.save();
+      res.status(201).json(savedReview); // 201 status for "Created"
+  
+    } catch (error) {
+      res.status(500).json({ message: "Error submitting review", error: error.message });
+    }
+});
+
+app.post('/api/products', async (req, res) => {
+    try {
+      const { name, description, category, price, sellerId } = req.body;
+  
+      // Basic validation
+      if (!name || !description || !category || !price || !sellerId) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+  
+      const newProduct = new Product({
+        name,
+        description,
+        category,
+        price,
+        sellerId
+      });
+  
+      const savedProduct = await newProduct.save();
+      // Populate seller info before sending back the response
+      await savedProduct.populate('sellerId', 'name location email');
+      res.status(201).json(savedProduct);
+  
+    } catch (error) {
+      res.status(500).json({ message: "Error creating product", error: error.message });
+    }
+  });
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
