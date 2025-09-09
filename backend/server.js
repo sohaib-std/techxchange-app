@@ -1,10 +1,12 @@
+const axios = require('axios');
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database'); // Import DB connection
 
 const authRoutes = require('./routes/auth');
-const { protect } = require('./middleware/auth');
+const { protect, authorize } = require('./middleware/auth');
 // Load environment variables
 dotenv.config();
 
@@ -22,6 +24,7 @@ app.use(express.json());
 const Product = require('./models/Product');
 const Seller = require('./models/Seller');
 const Review = require('./models/Review');
+const User = require('./models/User');
 
 // Basic root endpoint
 app.get('/', (req, res) => {
@@ -48,7 +51,7 @@ app.get('/api/products/:id', async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
     // Find reviews for this product
-    const productReviews = await Review.find({ productId: req.params.id });
+    const productReviews = await Review.find({ productId: req.params.id }).populate('userId', 'username');
     res.json({ ...product.toObject(), reviews: productReviews });
   } catch (error) {
     res.status(500).json({ message: "Error fetching product", error: error.message });
@@ -81,24 +84,26 @@ app.get('/api/sellers/:id', async (req, res) => {
 });
 
 // POST /api/reviews - Submit a new review
-app.post('/api/reviews', async (req, res) => {
+app.post('/api/reviews', protect, async (req, res) => { // Added 'protect' middleware
     try {
-      const { productId, rating, reviewerName, reviewText } = req.body;
+      const { productId, rating, reviewText } = req.body; // Removed reviewerName
   
       // Basic validation
-      if (!productId || !rating || !reviewerName || !reviewText) {
+      if (!productId || !rating || !reviewText) {
         return res.status(400).json({ message: "All fields are required" });
       }
   
       const newReview = new Review({
         productId,
+        userId: req.user.id, // Use the ID from the authenticated user
         rating,
-        reviewerName,
         reviewText
       });
   
       const savedReview = await newReview.save();
-      res.status(201).json(savedReview); // 201 status for "Created"
+      // Populate user info before sending back the response
+      await savedReview.populate('userId', 'username'); 
+      res.status(201).json(savedReview);
   
     } catch (error) {
       res.status(500).json({ message: "Error submitting review", error: error.message });
@@ -139,6 +144,52 @@ app.get('/api/auth/profile', protect, async (req, res) => {
       res.json(user);
     } catch (error) {
       res.status(500).json({ message: "Server error fetching profile", error: error.message });
+    }
+  });
+
+app.get('/api/news', async (req, res) => {
+    try {
+      const response = await axios.get('https://newsapi.org/v2/top-headlines', {
+        params: {
+          category: 'technology',
+          language: 'en',
+          pageSize: 10, // Get 10 articles
+          apiKey: process.env.NEWS_API_KEY
+        }
+      });
+      res.json(response.data.articles); // Send just the articles array
+    } catch (error) {
+      console.error('News API error:', error.response?.data || error.message);
+      res.status(500).json({ 
+        message: "Error fetching news", 
+        error: "Could not retrieve news at this time." 
+      });
+    }
+  });  
+
+  app.post('/api/products', protect, authorize('seller', 'admin'), async (req, res) => { // Added middleware
+    try {
+      const { name, description, category, price } = req.body; // Removed sellerId from body
+  
+      // Basic validation
+      if (!name || !description || !category || !price) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+  
+      const newProduct = new Product({
+        name,
+        description,
+        category,
+        price,
+        sellerId: req.user.id // Use the ID from the authenticated user
+      });
+  
+      const savedProduct = await newProduct.save();
+      await savedProduct.populate('sellerId', 'name location email');
+      res.status(201).json(savedProduct);
+  
+    } catch (error) {
+      res.status(500).json({ message: "Error creating product", error: error.message });
     }
   });
 // Start the server

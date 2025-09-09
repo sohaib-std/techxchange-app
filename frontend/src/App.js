@@ -7,6 +7,8 @@ import SellerList from './components/SellerList';
 import ProductDetail from './components/ProductDetail';
 import Login from './components/Login';
 import Register from './components/Register';
+import NewsFeed from './components/NewsFeed';
+import AddProductForm from './components/AddProductForm';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
               <Route path="/" element={<ProductList />} />
               <Route path="/sellers" element={<SellerList />} />
               <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/add-product" element={<AddProductForm />} />
+              <Route path="/news" element={<NewsFeed />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
             </Routes>

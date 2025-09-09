@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 // Create a configured axios instance
 const api = axios.create({
@@ -23,6 +23,7 @@ export const setAuthToken = (token) => {
 export const productService = {
   getAll: () => api.get('/products'),
   getById: (id) => api.get(`/products/${id}`),
+  create: (productData) => api.post('/products', productData),
 };
 
 export const sellerService = {
@@ -40,4 +41,8 @@ export const authService = {
   register: (userData) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/profile'),
   setToken: (token) => setAuthToken(token), // Export the token setter
+};
+
+export const newsService = {
+    getTechNews: () => api.get('/news'),
 };
